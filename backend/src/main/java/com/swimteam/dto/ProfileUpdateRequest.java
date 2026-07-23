@@ -1,6 +1,10 @@
 package com.swimteam.dto;
 
+import com.swimteam.validation.PhoneNumbers;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
@@ -15,9 +19,16 @@ public class ProfileUpdateRequest {
     @Size(max = 100)
     private String lastName;
 
-    @Size(max = 40)
+    @NotBlank
+    @Email
+    @Size(max = 255)
+    private String email;
+
+    @NotBlank
+    @Pattern(regexp = PhoneNumbers.E164_REGEX, message = PhoneNumbers.E164_MESSAGE)
     private String phone;
 
+    @NotNull(message = "date of birth is required")
     private LocalDate dateOfBirth;
 
     @Size(max = 255)
@@ -26,7 +37,8 @@ public class ProfileUpdateRequest {
     @Size(max = 100)
     private String emergencyContactName;
 
-    @Size(max = 40)
+    /** Optional until profile completion; when provided must be E.164. */
+    @Pattern(regexp = "^$|" + PhoneNumbers.E164_REGEX, message = PhoneNumbers.E164_MESSAGE)
     private String emergencyContactPhone;
 
     @Size(max = 80)
@@ -58,6 +70,14 @@ public class ProfileUpdateRequest {
 
     public void setLastName(String lastName) {
         this.lastName = lastName;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public String getPhone() {

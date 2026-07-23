@@ -8,17 +8,27 @@ export function CoachDashboardPage() {
   const { token } = useAuth();
   const [metrics, setMetrics] = useState(null);
   const [members, setMembers] = useState([]);
+  const [ageReport, setAgeReport] = useState(null);
+  const [sort, setSort] = useState('age');
+  const [direction, setDirection] = useState('asc');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      setLoading(true);
       try {
-        const [m, roster] = await Promise.all([api.getMetrics(token), api.getMembers(token)]);
+        const [m, roster, report] = await Promise.all([
+          api.getMetrics(token),
+          api.getMembers(token, { sort, direction }),
+          api.getAgeGroupReport(token),
+        ]);
         if (!cancelled) {
           setMetrics(m);
           setMembers(roster);
+          setAgeReport(report);
+          setError('');
         }
       } catch (err) {
         if (!cancelled) setError(err.message || 'Failed to load coach data');
@@ -29,15 +39,19 @@ export function CoachDashboardPage() {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [token, sort, direction]);
 
   return (
     <AppShell
       title="Coach dashboard"
-      subtitle="Full roster access with completion flags and team metrics."
+      subtitle="Sort the roster by age and review members grouped into age brackets."
     >
       {loading && <p className="muted">Loading dashboard…</p>}
-      {error && <p className="form-error" role="alert">{error}</p>}
+      {error && (
+        <p className="form-error" role="alert">
+          {error}
+        </p>
+      )}
 
       {!loading && !error && metrics && (
         <>
@@ -67,7 +81,28 @@ export function CoachDashboardPage() {
           </section>
 
           <section className="roster-section">
-            <h2>Roster</h2>
+            <div className="section-toolbar">
+              <h2>Roster</h2>
+              <div className="sort-controls">
+                <label>
+                  Sort by
+                  <select value={sort} onChange={(e) => setSort(e.target.value)}>
+                    <option value="age">Age</option>
+                    <option value="name">Name</option>
+                    <option value="completed">Completion</option>
+                    <option value="username">Username</option>
+                  </select>
+                </label>
+                <label>
+                  Direction
+                  <select value={direction} onChange={(e) => setDirection(e.target.value)}>
+                    <option value="asc">Ascending</option>
+                    <option value="desc">Descending</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+
             {members.length === 0 ? (
               <p className="muted">No members have signed up yet.</p>
             ) : (
@@ -76,6 +111,8 @@ export function CoachDashboardPage() {
                   <thead>
                     <tr>
                       <th>Member</th>
+                      <th>Age</th>
+                      <th>Phone</th>
                       <th>Stroke</th>
                       <th>PB (s)</th>
                       <th>Status</th>
@@ -93,6 +130,8 @@ export function CoachDashboardPage() {
                             <span>{m.email}</span>
                           </div>
                         </td>
+                        <td>{m.age ?? '—'}</td>
+                        <td>{m.phone || '—'}</td>
                         <td>{m.strokeSpecialty || '—'}</td>
                         <td>{m.personalBestSeconds ?? '—'}</td>
                         <td>
@@ -112,6 +151,42 @@ export function CoachDashboardPage() {
               </div>
             )}
           </section>
+
+          {ageReport && (
+            <section className="roster-section age-report">
+              <h2>Age group report</h2>
+              <p className="muted">
+                Members grouped into common swim age brackets.
+                {ageReport.membersWithUnknownAge > 0
+                  ? ` ${ageReport.membersWithUnknownAge} member(s) missing date of birth.`
+                  : ''}
+              </p>
+              <div className="age-group-grid">
+                {ageReport.groups.map((group) => (
+                  <article key={group.label} className="age-group-card">
+                    <header>
+                      <h3>{group.label}</h3>
+                      <strong>{group.memberCount}</strong>
+                    </header>
+                    {group.members.length === 0 ? (
+                      <p className="muted">No members</p>
+                    ) : (
+                      <ul>
+                        {group.members.map((m) => (
+                          <li key={m.userId}>
+                            <Link to={`/coach/members/${m.userId}`}>
+                              {[m.firstName, m.lastName].filter(Boolean).join(' ') || m.username}
+                            </Link>
+                            <span> · age {m.age ?? '—'}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </article>
+                ))}
+              </div>
+            </section>
+          )}
         </>
       )}
     </AppShell>
@@ -143,10 +218,7 @@ export function CoachMemberDetailPage() {
   }, [token, userId]);
 
   return (
-    <AppShell
-      title="Member detail"
-      subtitle="Full profile visible to coaches only."
-    >
+    <AppShell title="Member detail" subtitle="Full profile visible to coaches only.">
       <p>
         <Link className="text-link" to="/coach">
           ← Back to roster
@@ -154,7 +226,11 @@ export function CoachMemberDetailPage() {
       </p>
 
       {loading && <p className="muted">Loading…</p>}
-      {error && <p className="form-error" role="alert">{error}</p>}
+      {error && (
+        <p className="form-error" role="alert">
+          {error}
+        </p>
+      )}
 
       {profile && (
         <article className="detail-panel">
@@ -162,6 +238,7 @@ export function CoachMemberDetailPage() {
             <strong>{profile.profileCompleted ? 'Profile complete' : 'Profile incomplete'}</strong>
             <span>
               {profile.firstName} {profile.lastName} (@{profile.username})
+              {profile.age != null ? ` · age ${profile.age}` : ''}
             </span>
           </div>
 
@@ -177,6 +254,10 @@ export function CoachMemberDetailPage() {
             <div>
               <dt>Date of birth</dt>
               <dd>{profile.dateOfBirth || '—'}</dd>
+            </div>
+            <div>
+              <dt>Age</dt>
+              <dd>{profile.age ?? '—'}</dd>
             </div>
             <div>
               <dt>Address</dt>
@@ -195,7 +276,9 @@ export function CoachMemberDetailPage() {
             </div>
             <div>
               <dt>Personal best</dt>
-              <dd>{profile.personalBestSeconds != null ? `${profile.personalBestSeconds}s` : '—'}</dd>
+              <dd>
+                {profile.personalBestSeconds != null ? `${profile.personalBestSeconds}s` : '—'}
+              </dd>
             </div>
             <div>
               <dt>Height / Weight</dt>

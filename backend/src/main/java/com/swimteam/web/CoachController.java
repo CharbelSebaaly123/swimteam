@@ -1,5 +1,6 @@
 package com.swimteam.web;
 
+import com.swimteam.dto.AgeGroupReportResponse;
 import com.swimteam.dto.CoachMetricsResponse;
 import com.swimteam.dto.MemberSummaryResponse;
 import com.swimteam.dto.ProfileResponse;
@@ -18,8 +19,10 @@ public class CoachController {
     }
 
     @GetMapping("/members")
-    public List<MemberSummaryResponse> listMembers() {
-        return profileService.listMembersForCoach();
+    public List<MemberSummaryResponse> listMembers(
+            @RequestParam(defaultValue = "name") String sort,
+            @RequestParam(defaultValue = "asc") String direction) {
+        return profileService.listMembersForCoach(sort, direction);
     }
 
     @GetMapping("/members/{userId}")
@@ -30,5 +33,10 @@ public class CoachController {
     @GetMapping("/metrics")
     public CoachMetricsResponse getMetrics() {
         return profileService.getCoachMetrics();
+    }
+
+    @GetMapping("/reports/age-groups")
+    public AgeGroupReportResponse ageGroupReport() {
+        return profileService.getAgeGroupReport();
     }
 }

@@ -20,6 +20,7 @@ export function AppShell({ children, title, subtitle }) {
             ) : (
               <NavLink to="/profile">My Profile</NavLink>
             )}
+            <NavLink to="/change-password">Password</NavLink>
             <button type="button" className="linkish" onClick={logout}>
               Sign out
             </button>

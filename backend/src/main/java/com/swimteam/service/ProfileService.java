@@ -3,6 +3,8 @@ package com.swimteam.service;
 import com.swimteam.domain.MemberProfile;
 import com.swimteam.domain.Role;
 import com.swimteam.domain.User;
+import com.swimteam.dto.AgeGroupReportResponse;
+import com.swimteam.dto.AgeGroupReportResponse.AgeGroupBucket;
 import com.swimteam.dto.CoachMetricsResponse;
 import com.swimteam.dto.MemberSummaryResponse;
 import com.swimteam.dto.ProfileResponse;
@@ -10,8 +12,13 @@ import com.swimteam.dto.ProfileUpdateRequest;
 import com.swimteam.repository.MemberProfileRepository;
 import com.swimteam.repository.UserRepository;
 import com.swimteam.security.UserPrincipal;
+import java.time.LocalDate;
+import java.time.Period;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.DoubleSummaryStatistics;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -42,29 +49,41 @@ public class ProfileService {
         User user = requireUser(principal.getId());
         ensureMember(user);
         MemberProfile profile = ensureProfile(user);
+
+        String newEmail = request.getEmail().trim().toLowerCase(Locale.ROOT);
+        if (!newEmail.equalsIgnoreCase(user.getEmail()) && userRepository.existsByEmail(newEmail)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already registered");
+        }
+        user.setEmail(newEmail);
+
         applyUpdate(profile, request);
         profile.recomputeCompletion();
         memberProfileRepository.save(profile);
+        userRepository.save(user);
         return ProfileResponse.from(user, profile);
     }
 
     @Transactional(readOnly = true)
-    public List<MemberSummaryResponse> listMembersForCoach() {
-        return memberProfileRepository.findAllMemberProfiles().stream()
-                .map(profile -> {
-                    User user = profile.getUser();
-                    return new MemberSummaryResponse(
-                            user.getId(),
-                            profile.getId(),
-                            user.getUsername(),
-                            user.getEmail(),
-                            profile.getFirstName(),
-                            profile.getLastName(),
-                            profile.getStrokeSpecialty(),
-                            profile.getPersonalBestSeconds(),
-                            profile.isProfileCompleted());
-                })
+    public List<MemberSummaryResponse> listMembersForCoach(String sort, String direction) {
+        List<MemberSummaryResponse> members = memberProfileRepository.findAllMemberProfiles().stream()
+                .map(this::toSummary)
                 .toList();
+
+        String sortKey = sort == null ? "name" : sort.trim().toLowerCase(Locale.ROOT);
+        boolean ascending = direction == null || !"desc".equalsIgnoreCase(direction.trim());
+
+        Comparator<MemberSummaryResponse> comparator = switch (sortKey) {
+            case "age" -> Comparator.comparing(
+                    MemberSummaryResponse::getAge, Comparator.nullsLast(Integer::compareTo));
+            case "name" -> Comparator.comparing(
+                    (MemberSummaryResponse m) ->
+                            (nullToEmpty(m.getLastName()) + " " + nullToEmpty(m.getFirstName()))
+                                    .toLowerCase(Locale.ROOT));
+            case "completed" -> Comparator.comparing(MemberSummaryResponse::isProfileCompleted);
+            default -> Comparator.comparing(MemberSummaryResponse::getUsername, String.CASE_INSENSITIVE_ORDER);
+        };
+
+        return members.stream().sorted(ascending ? comparator : comparator.reversed()).toList();
     }
 
     @Transactional(readOnly = true)
@@ -94,6 +113,70 @@ public class ProfileService {
         double avgPb = pbStats.getCount() == 0 ? 0.0 : pbStats.getAverage();
         return new CoachMetricsResponse(
                 total, completed, incomplete, round1(rate), round2(avgPb), pbStats.getCount());
+    }
+
+    /**
+     * Groups members into common swim age brackets for coach reporting.
+     */
+    @Transactional(readOnly = true)
+    public AgeGroupReportResponse getAgeGroupReport() {
+        List<AgeGroupBucket> buckets = List.of(
+                new AgeGroupBucket("8 & under", 0, 8),
+                new AgeGroupBucket("9–10", 9, 10),
+                new AgeGroupBucket("11–12", 11, 12),
+                new AgeGroupBucket("13–14", 13, 14),
+                new AgeGroupBucket("15–16", 15, 16),
+                new AgeGroupBucket("17–18", 17, 18),
+                new AgeGroupBucket("19+", 19, 120));
+
+        // Use mutable copies so we can add members
+        List<AgeGroupBucket> groups = new ArrayList<>();
+        for (AgeGroupBucket template : buckets) {
+            groups.add(new AgeGroupBucket(template.getLabel(), template.getAgeFrom(), template.getAgeTo()));
+        }
+
+        long unknown = 0;
+        for (MemberProfile profile : memberProfileRepository.findAllMemberProfiles()) {
+            MemberSummaryResponse summary = toSummary(profile);
+            Integer age = summary.getAge();
+            if (age == null) {
+                unknown++;
+                continue;
+            }
+            for (AgeGroupBucket group : groups) {
+                if (age >= group.getAgeFrom() && age <= group.getAgeTo()) {
+                    group.addMember(summary);
+                    break;
+                }
+            }
+        }
+
+        return new AgeGroupReportResponse(groups, unknown);
+    }
+
+    private MemberSummaryResponse toSummary(MemberProfile profile) {
+        User user = profile.getUser();
+        Integer age = ageFrom(profile.getDateOfBirth());
+        return new MemberSummaryResponse(
+                user.getId(),
+                profile.getId(),
+                user.getUsername(),
+                user.getEmail(),
+                profile.getFirstName(),
+                profile.getLastName(),
+                profile.getPhone(),
+                profile.getDateOfBirth() != null ? profile.getDateOfBirth().toString() : null,
+                age,
+                profile.getStrokeSpecialty(),
+                profile.getPersonalBestSeconds(),
+                profile.isProfileCompleted());
+    }
+
+    private static Integer ageFrom(LocalDate dateOfBirth) {
+        if (dateOfBirth == null) {
+            return null;
+        }
+        return Period.between(dateOfBirth, LocalDate.now()).getYears();
     }
 
     private User requireUser(Long id) {
@@ -126,7 +209,7 @@ public class ProfileService {
     private void applyUpdate(MemberProfile profile, ProfileUpdateRequest request) {
         profile.setFirstName(request.getFirstName().trim());
         profile.setLastName(request.getLastName().trim());
-        profile.setPhone(trimToNull(request.getPhone()));
+        profile.setPhone(request.getPhone().trim());
         profile.setDateOfBirth(request.getDateOfBirth());
         profile.setAddress(trimToNull(request.getAddress()));
         profile.setEmergencyContactName(trimToNull(request.getEmergencyContactName()));
@@ -144,6 +227,10 @@ public class ProfileService {
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private static String nullToEmpty(String value) {
+        return value == null ? "" : value;
     }
 
     private static double round1(double value) {

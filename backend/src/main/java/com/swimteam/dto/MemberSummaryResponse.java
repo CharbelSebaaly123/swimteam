@@ -8,6 +8,9 @@ public class MemberSummaryResponse {
     private String email;
     private String firstName;
     private String lastName;
+    private String phone;
+    private String dateOfBirth;
+    private Integer age;
     private String strokeSpecialty;
     private Double personalBestSeconds;
     private boolean profileCompleted;
@@ -19,6 +22,9 @@ public class MemberSummaryResponse {
             String email,
             String firstName,
             String lastName,
+            String phone,
+            String dateOfBirth,
+            Integer age,
             String strokeSpecialty,
             Double personalBestSeconds,
             boolean profileCompleted) {
@@ -28,6 +34,9 @@ public class MemberSummaryResponse {
         this.email = email;
         this.firstName = firstName;
         this.lastName = lastName;
+        this.phone = phone;
+        this.dateOfBirth = dateOfBirth;
+        this.age = age;
         this.strokeSpecialty = strokeSpecialty;
         this.personalBestSeconds = personalBestSeconds;
         this.profileCompleted = profileCompleted;
@@ -55,6 +64,18 @@ public class MemberSummaryResponse {
 
     public String getLastName() {
         return lastName;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public String getDateOfBirth() {
+        return dateOfBirth;
+    }
+
+    public Integer getAge() {
+        return age;
     }
 
     public String getStrokeSpecialty() {

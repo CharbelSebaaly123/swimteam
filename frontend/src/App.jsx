@@ -4,6 +4,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { LoginPage } from './pages/LoginPage';
 import { SignupPage } from './pages/SignupPage';
 import { ProfilePage } from './pages/ProfilePage';
+import { ChangePasswordPage } from './pages/ChangePasswordPage';
 import { CoachDashboardPage, CoachMemberDetailPage } from './pages/CoachDashboardPage';
 
 function HomeRedirect() {
@@ -18,6 +19,10 @@ export default function App() {
       <Route path="/" element={<HomeRedirect />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
+
+      <Route element={<ProtectedRoute />}>
+        <Route path="/change-password" element={<ChangePasswordPage />} />
+      </Route>
 
       <Route element={<ProtectedRoute role="MEMBER" />}>
         <Route path="/profile" element={<ProfilePage />} />

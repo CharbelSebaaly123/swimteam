@@ -4,6 +4,7 @@ import com.swimteam.domain.MemberProfile;
 import com.swimteam.domain.User;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.Period;
 
 public class ProfileResponse {
 
@@ -15,6 +16,7 @@ public class ProfileResponse {
     private String lastName;
     private String phone;
     private LocalDate dateOfBirth;
+    private Integer age;
     private String address;
     private String emergencyContactName;
     private String emergencyContactPhone;
@@ -37,6 +39,9 @@ public class ProfileResponse {
             response.lastName = profile.getLastName();
             response.phone = profile.getPhone();
             response.dateOfBirth = profile.getDateOfBirth();
+            if (profile.getDateOfBirth() != null) {
+                response.age = Period.between(profile.getDateOfBirth(), LocalDate.now()).getYears();
+            }
             response.address = profile.getAddress();
             response.emergencyContactName = profile.getEmergencyContactName();
             response.emergencyContactPhone = profile.getEmergencyContactPhone();
@@ -81,6 +86,10 @@ public class ProfileResponse {
 
     public LocalDate getDateOfBirth() {
         return dateOfBirth;
+    }
+
+    public Integer getAge() {
+        return age;
     }
 
     public String getAddress() {

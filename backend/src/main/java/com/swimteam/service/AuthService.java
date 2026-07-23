@@ -4,7 +4,9 @@ import com.swimteam.domain.MemberProfile;
 import com.swimteam.domain.Role;
 import com.swimteam.domain.User;
 import com.swimteam.dto.AuthResponse;
+import com.swimteam.dto.ChangePasswordRequest;
 import com.swimteam.dto.LoginRequest;
+import com.swimteam.dto.MessageResponse;
 import com.swimteam.dto.SignupRequest;
 import com.swimteam.repository.UserRepository;
 import com.swimteam.security.JwtTokenProvider;
@@ -71,5 +73,24 @@ public class AuthService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials"));
         String token = jwtTokenProvider.generateToken(principal);
         return new AuthResponse(token, user.getId(), user.getUsername(), user.getEmail(), user.getRole());
+    }
+
+    @Transactional
+    public MessageResponse changePassword(UserPrincipal principal, ChangePasswordRequest request) {
+        User user = userRepository
+                .findById(principal.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPasswordHash())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Current password is incorrect");
+        }
+        if (request.getCurrentPassword().equals(request.getNewPassword())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "New password must be different from the current password");
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+        return new MessageResponse("Password updated successfully");
     }
 }

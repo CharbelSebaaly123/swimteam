@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { api } from '../api';
+import { E164_PHONE_PATTERN, api } from '../api';
 import { useAuth } from '../auth';
 import { AppShell } from '../components/AppShell';
 
 const EMPTY = {
   firstName: '',
   lastName: '',
+  email: '',
   phone: '',
   dateOfBirth: '',
   address: '',
@@ -23,6 +24,7 @@ function toForm(profile) {
   return {
     firstName: profile.firstName || '',
     lastName: profile.lastName || '',
+    email: profile.email || '',
     phone: profile.phone || '',
     dateOfBirth: profile.dateOfBirth || '',
     address: profile.address || '',
@@ -40,8 +42,9 @@ function toPayload(form) {
   return {
     firstName: form.firstName.trim(),
     lastName: form.lastName.trim(),
-    phone: form.phone.trim() || null,
-    dateOfBirth: form.dateOfBirth || null,
+    email: form.email.trim(),
+    phone: form.phone.trim(),
+    dateOfBirth: form.dateOfBirth,
     address: form.address.trim() || null,
     emergencyContactName: form.emergencyContactName.trim() || null,
     emergencyContactPhone: form.emergencyContactPhone.trim() || null,
@@ -91,11 +94,35 @@ export function ProfilePage() {
     setSaving(true);
     setError('');
     setMessage('');
+
+    if (!E164_PHONE_PATTERN.test(form.phone.trim())) {
+      setError('Phone must be international E.164 format, e.g. +14155552671');
+      setSaving(false);
+      return;
+    }
+    if (
+      form.emergencyContactPhone.trim() &&
+      !E164_PHONE_PATTERN.test(form.emergencyContactPhone.trim())
+    ) {
+      setError('Emergency contact phone must be international E.164 format, e.g. +14155552671');
+      setSaving(false);
+      return;
+    }
+    if (!form.dateOfBirth) {
+      setError('Date of birth is required');
+      setSaving(false);
+      return;
+    }
+
     try {
       const saved = await api.updateMyProfile(token, toPayload(form));
       setForm(toForm(saved));
       setCompleted(Boolean(saved.profileCompleted));
-      setMessage(saved.profileCompleted ? 'Profile saved and marked complete.' : 'Profile saved. Fill required fields to complete.');
+      setMessage(
+        saved.profileCompleted
+          ? 'Profile saved and marked complete.'
+          : 'Profile saved. Fill required fields to complete.',
+      );
     } catch (err) {
       setError(err.message || 'Unable to save profile');
     } finally {
@@ -106,14 +133,14 @@ export function ProfilePage() {
   return (
     <AppShell
       title="My profile"
-      subtitle="Enter your personal details and swim metrics. Required fields unlock the completed flag."
+      subtitle="Email, international phone, and date of birth are required. Address is optional."
     >
       <div className={`status-banner ${completed ? 'complete' : 'incomplete'}`}>
         <strong>{completed ? 'Profile complete' : 'Profile incomplete'}</strong>
         <span>
           {completed
             ? 'Your coach can see a completed flag on the roster.'
-            : 'Required: name, phone, date of birth, emergency contact, stroke specialty.'}
+            : 'Required: name, email, international phone, date of birth, emergency contact, stroke specialty.'}
         </span>
       </div>
 
@@ -126,15 +153,39 @@ export function ProfilePage() {
             <div className="grid-2">
               <label>
                 First name *
-                <input value={form.firstName} onChange={(e) => updateField('firstName', e.target.value)} required />
+                <input
+                  value={form.firstName}
+                  onChange={(e) => updateField('firstName', e.target.value)}
+                  required
+                />
               </label>
               <label>
                 Last name *
-                <input value={form.lastName} onChange={(e) => updateField('lastName', e.target.value)} required />
+                <input
+                  value={form.lastName}
+                  onChange={(e) => updateField('lastName', e.target.value)}
+                  required
+                />
               </label>
               <label>
-                Phone *
-                <input value={form.phone} onChange={(e) => updateField('phone', e.target.value)} />
+                Email *
+                <input
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => updateField('email', e.target.value)}
+                  required
+                />
+              </label>
+              <label>
+                Phone (international) *
+                <input
+                  value={form.phone}
+                  onChange={(e) => updateField('phone', e.target.value)}
+                  placeholder="+14155552671"
+                  pattern="^\+[1-9]\d{6,14}$"
+                  title="E.164 format, e.g. +14155552671"
+                  required
+                />
               </label>
               <label>
                 Date of birth *
@@ -142,10 +193,11 @@ export function ProfilePage() {
                   type="date"
                   value={form.dateOfBirth}
                   onChange={(e) => updateField('dateOfBirth', e.target.value)}
+                  required
                 />
               </label>
               <label className="full">
-                Address
+                Address (optional)
                 <input value={form.address} onChange={(e) => updateField('address', e.target.value)} />
               </label>
             </div>
@@ -162,10 +214,13 @@ export function ProfilePage() {
                 />
               </label>
               <label>
-                Contact phone *
+                Contact phone (international) *
                 <input
                   value={form.emergencyContactPhone}
                   onChange={(e) => updateField('emergencyContactPhone', e.target.value)}
+                  placeholder="+14155559876"
+                  pattern="^\+[1-9]\d{6,14}$"
+                  title="E.164 format, e.g. +14155559876"
                 />
               </label>
             </div>
@@ -228,7 +283,11 @@ export function ProfilePage() {
             </div>
           </fieldset>
 
-          {error && <p className="form-error" role="alert">{error}</p>}
+          {error && (
+            <p className="form-error" role="alert">
+              {error}
+            </p>
+          )}
           {message && <p className="form-success">{message}</p>}
 
           <button className="btn primary" type="submit" disabled={saving}>

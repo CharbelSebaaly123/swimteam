@@ -1,5 +1,6 @@
 package com.swimteam.domain;
 
+import com.swimteam.validation.PhoneNumbers;
 import jakarta.persistence.*;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -179,16 +180,17 @@ public class MemberProfile {
     }
 
     /**
-     * Required fields for a completed profile: name, phone, DOB, emergency contact, stroke specialty.
+     * Required for completion: name, E.164 phone, DOB, emergency contact (E.164), stroke specialty.
+     * Address is optional. Email is validated on the User account separately.
      */
     public void recomputeCompletion() {
         this.profileCompleted =
                 isPresent(firstName)
                         && isPresent(lastName)
-                        && isPresent(phone)
+                        && PhoneNumbers.isValidE164(phone)
                         && dateOfBirth != null
                         && isPresent(emergencyContactName)
-                        && isPresent(emergencyContactPhone)
+                        && PhoneNumbers.isValidE164(emergencyContactPhone)
                         && isPresent(strokeSpecialty);
         this.updatedAt = Instant.now();
     }
