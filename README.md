@@ -55,8 +55,12 @@ Open http://localhost:5173 — Vite proxies `/api` to the backend.
 | POST | `/api/auth/login` | Public | Login → JWT |
 | POST | `/api/auth/change-password` | Coach / Member | Change password (current + new) |
 | GET/PUT | `/api/profiles/me` | Member | Own profile (email, E.164 phone, DOB required; address optional) |
+| POST | `/api/profiles/me/photo` | Member | Upload photo (resized + JPEG compressed) |
+| GET | `/api/profiles/me/photo` | Member | Download own photo |
+| DELETE | `/api/profiles/me/photo` | Member | Remove photo |
 | GET | `/api/coach/members?sort=&direction=` | Coach | Roster + completion flags (sort: `age`, `name`, `completed`, `username`) |
 | GET | `/api/coach/members/{userId}` | Coach | Full member profile |
+| GET | `/api/coach/members/{userId}/photo` | Coach | Member photo |
 | GET | `/api/coach/metrics` | Coach | Aggregate metrics |
 | GET | `/api/coach/reports/age-groups` | Coach | Members grouped by swim age brackets |
 

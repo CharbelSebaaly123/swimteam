@@ -17,6 +17,10 @@ spring:
     properties:
       hibernate:
         format_sql: true
+  servlet:
+    multipart:
+      max-file-size: 8MB
+      max-request-size: 9MB
 
 server:
   port: 8080
@@ -31,3 +35,6 @@ app:
     username: admin
     password: admin123
     email: coach@swimteam.local
+  photo:
+    max-dimension: 800
+    jpeg-quality: 0.75

@@ -26,6 +26,7 @@ public class ProfileResponse {
     private Double weightKg;
     private String notes;
     private boolean profileCompleted;
+    private boolean hasPhoto;
     private Instant updatedAt;
 
     public static ProfileResponse from(User user, MemberProfile profile) {
@@ -51,6 +52,7 @@ public class ProfileResponse {
             response.weightKg = profile.getWeightKg();
             response.notes = profile.getNotes();
             response.profileCompleted = profile.isProfileCompleted();
+            response.hasPhoto = profile.hasPhoto();
             response.updatedAt = profile.getUpdatedAt();
         }
         return response;
@@ -126,6 +128,10 @@ public class ProfileResponse {
 
     public boolean isProfileCompleted() {
         return profileCompleted;
+    }
+
+    public boolean isHasPhoto() {
+        return hasPhoto;
     }
 
     public Instant getUpdatedAt() {

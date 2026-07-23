@@ -5,7 +5,11 @@ import com.swimteam.dto.CoachMetricsResponse;
 import com.swimteam.dto.MemberSummaryResponse;
 import com.swimteam.dto.ProfileResponse;
 import com.swimteam.service.ProfileService;
+import com.swimteam.service.ProfileService.PhotoPayload;
 import java.util.List;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -28,6 +32,15 @@ public class CoachController {
     @GetMapping("/members/{userId}")
     public ProfileResponse getMember(@PathVariable Long userId) {
         return profileService.getMemberProfileForCoach(userId);
+    }
+
+    @GetMapping("/members/{userId}/photo")
+    public ResponseEntity<byte[]> getMemberPhoto(@PathVariable Long userId) {
+        PhotoPayload photo = profileService.getMemberPhotoForCoach(userId);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CACHE_CONTROL, "private, max-age=3600")
+                .contentType(MediaType.parseMediaType(photo.contentType()))
+                .body(photo.data());
     }
 
     @GetMapping("/metrics")

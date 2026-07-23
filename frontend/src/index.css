@@ -311,6 +311,77 @@ textarea:focus {
   transform: translateY(-1px);
 }
 
+.btn.secondary,
+.btn.ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(11, 61, 74, 0.08);
+  color: var(--teal);
+}
+
+.btn.ghost {
+  background: transparent;
+  border: 1px solid var(--line);
+}
+
+.file-btn {
+  cursor: pointer;
+}
+
+.photo-upload {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 1rem;
+  align-items: center;
+}
+
+.photo-preview {
+  width: 120px;
+  height: 120px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: rgba(11, 61, 74, 0.05);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 0.4rem;
+}
+
+.photo-preview.large {
+  width: 160px;
+  height: 160px;
+}
+
+.photo-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.photo-actions {
+  display: grid;
+  gap: 0.65rem;
+  justify-items: start;
+}
+
+.detail-with-photo {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 1.1rem;
+  align-items: start;
+}
+
+@media (max-width: 640px) {
+  .photo-upload,
+  .detail-with-photo {
+    grid-template-columns: 1fr;
+  }
+}
+
 .form-error {
   color: var(--danger);
   margin: 0;

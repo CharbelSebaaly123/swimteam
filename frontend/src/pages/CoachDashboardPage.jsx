@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { api } from '../api';
+import { api, fetchPhotoObjectUrl } from '../api';
 import { useAuth } from '../auth';
 import { AppShell } from '../components/AppShell';
 
@@ -197,23 +197,33 @@ export function CoachMemberDetailPage() {
   const { userId } = useParams();
   const { token } = useAuth();
   const [profile, setProfile] = useState(null);
+  const [photoUrl, setPhotoUrl] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
+    let objectUrl;
+
     (async () => {
       try {
         const data = await api.getMember(token, userId);
-        if (!cancelled) setProfile(data);
+        if (cancelled) return;
+        setProfile(data);
+        if (data.hasPhoto) {
+          objectUrl = await fetchPhotoObjectUrl(token, userId);
+          if (!cancelled) setPhotoUrl(objectUrl);
+        }
       } catch (err) {
         if (!cancelled) setError(err.message || 'Failed to load member');
       } finally {
         if (!cancelled) setLoading(false);
       }
     })();
+
     return () => {
       cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
   }, [token, userId]);
 
@@ -242,57 +252,70 @@ export function CoachMemberDetailPage() {
             </span>
           </div>
 
-          <dl className="detail-grid">
-            <div>
-              <dt>Email</dt>
-              <dd>{profile.email}</dd>
+          <div className="detail-with-photo">
+            <div className="photo-preview large">
+              {photoUrl ? (
+                <img
+                  src={photoUrl}
+                  alt={`${profile.firstName || ''} ${profile.lastName || ''}`.trim() || profile.username}
+                />
+              ) : (
+                <span>No photo</span>
+              )}
             </div>
-            <div>
-              <dt>Phone</dt>
-              <dd>{profile.phone || '—'}</dd>
-            </div>
-            <div>
-              <dt>Date of birth</dt>
-              <dd>{profile.dateOfBirth || '—'}</dd>
-            </div>
-            <div>
-              <dt>Age</dt>
-              <dd>{profile.age ?? '—'}</dd>
-            </div>
-            <div>
-              <dt>Address</dt>
-              <dd>{profile.address || '—'}</dd>
-            </div>
-            <div>
-              <dt>Emergency contact</dt>
-              <dd>
-                {profile.emergencyContactName || '—'}
-                {profile.emergencyContactPhone ? ` · ${profile.emergencyContactPhone}` : ''}
-              </dd>
-            </div>
-            <div>
-              <dt>Stroke specialty</dt>
-              <dd>{profile.strokeSpecialty || '—'}</dd>
-            </div>
-            <div>
-              <dt>Personal best</dt>
-              <dd>
-                {profile.personalBestSeconds != null ? `${profile.personalBestSeconds}s` : '—'}
-              </dd>
-            </div>
-            <div>
-              <dt>Height / Weight</dt>
-              <dd>
-                {profile.heightCm != null ? `${profile.heightCm} cm` : '—'}
-                {' / '}
-                {profile.weightKg != null ? `${profile.weightKg} kg` : '—'}
-              </dd>
-            </div>
-            <div className="full">
-              <dt>Notes</dt>
-              <dd>{profile.notes || '—'}</dd>
-            </div>
-          </dl>
+
+            <dl className="detail-grid">
+              <div>
+                <dt>Email</dt>
+                <dd>{profile.email}</dd>
+              </div>
+              <div>
+                <dt>Phone</dt>
+                <dd>{profile.phone || '—'}</dd>
+              </div>
+              <div>
+                <dt>Date of birth</dt>
+                <dd>{profile.dateOfBirth || '—'}</dd>
+              </div>
+              <div>
+                <dt>Age</dt>
+                <dd>{profile.age ?? '—'}</dd>
+              </div>
+              <div>
+                <dt>Address</dt>
+                <dd>{profile.address || '—'}</dd>
+              </div>
+              <div>
+                <dt>Emergency contact</dt>
+                <dd>
+                  {profile.emergencyContactName || '—'}
+                  {profile.emergencyContactPhone ? ` · ${profile.emergencyContactPhone}` : ''}
+                </dd>
+              </div>
+              <div>
+                <dt>Stroke specialty</dt>
+                <dd>{profile.strokeSpecialty || '—'}</dd>
+              </div>
+              <div>
+                <dt>Personal best</dt>
+                <dd>
+                  {profile.personalBestSeconds != null ? `${profile.personalBestSeconds}s` : '—'}
+                </dd>
+              </div>
+              <div>
+                <dt>Height / Weight</dt>
+                <dd>
+                  {profile.heightCm != null ? `${profile.heightCm} cm` : '—'}
+                  {' / '}
+                  {profile.weightKg != null ? `${profile.weightKg} kg` : '—'}
+                </dd>
+              </div>
+              <div className="full">
+                <dt>Notes</dt>
+                <dd>{profile.notes || '—'}</dd>
+              </div>
+            </dl>
+          </div>
         </article>
       )}
     </AppShell>

@@ -14,6 +14,7 @@ public class MemberSummaryResponse {
     private String strokeSpecialty;
     private Double personalBestSeconds;
     private boolean profileCompleted;
+    private boolean hasPhoto;
 
     public MemberSummaryResponse(
             Long userId,
@@ -27,7 +28,8 @@ public class MemberSummaryResponse {
             Integer age,
             String strokeSpecialty,
             Double personalBestSeconds,
-            boolean profileCompleted) {
+            boolean profileCompleted,
+            boolean hasPhoto) {
         this.userId = userId;
         this.profileId = profileId;
         this.username = username;
@@ -40,6 +42,7 @@ public class MemberSummaryResponse {
         this.strokeSpecialty = strokeSpecialty;
         this.personalBestSeconds = personalBestSeconds;
         this.profileCompleted = profileCompleted;
+        this.hasPhoto = hasPhoto;
     }
 
     public Long getUserId() {
@@ -88,5 +91,9 @@ public class MemberSummaryResponse {
 
     public boolean isProfileCompleted() {
         return profileCompleted;
+    }
+
+    public boolean isHasPhoto() {
+        return hasPhoto;
     }
 }

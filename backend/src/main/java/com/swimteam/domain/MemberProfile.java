@@ -45,6 +45,17 @@ public class MemberProfile {
     @Column(length = 1000)
     private String notes;
 
+    /** Resized/compressed profile photo bytes (typically JPEG). */
+    @Lob
+    @Basic(fetch = FetchType.LAZY)
+    private byte[] photoData;
+
+    private String photoContentType;
+
+    /** Fast flag so roster queries do not need to load the photo LOB. */
+    @Column(nullable = false)
+    private boolean photoUploaded = false;
+
     @Column(nullable = false)
     private boolean profileCompleted = false;
 
@@ -161,6 +172,34 @@ public class MemberProfile {
 
     public void setNotes(String notes) {
         this.notes = notes;
+    }
+
+    public byte[] getPhotoData() {
+        return photoData;
+    }
+
+    public void setPhotoData(byte[] photoData) {
+        this.photoData = photoData;
+    }
+
+    public String getPhotoContentType() {
+        return photoContentType;
+    }
+
+    public void setPhotoContentType(String photoContentType) {
+        this.photoContentType = photoContentType;
+    }
+
+    public boolean isPhotoUploaded() {
+        return photoUploaded;
+    }
+
+    public void setPhotoUploaded(boolean photoUploaded) {
+        this.photoUploaded = photoUploaded;
+    }
+
+    public boolean hasPhoto() {
+        return photoUploaded;
     }
 
     public boolean isProfileCompleted() {

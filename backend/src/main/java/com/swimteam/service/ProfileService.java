@@ -7,6 +7,8 @@ import com.swimteam.dto.AgeGroupReportResponse;
 import com.swimteam.dto.AgeGroupReportResponse.AgeGroupBucket;
 import com.swimteam.dto.CoachMetricsResponse;
 import com.swimteam.dto.MemberSummaryResponse;
+import com.swimteam.dto.MessageResponse;
+import com.swimteam.dto.PhotoUploadResponse;
 import com.swimteam.dto.ProfileResponse;
 import com.swimteam.dto.ProfileUpdateRequest;
 import com.swimteam.repository.MemberProfileRepository;
@@ -23,6 +25,7 @@ import java.util.Objects;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
@@ -30,10 +33,15 @@ public class ProfileService {
 
     private final UserRepository userRepository;
     private final MemberProfileRepository memberProfileRepository;
+    private final ImageProcessingService imageProcessingService;
 
-    public ProfileService(UserRepository userRepository, MemberProfileRepository memberProfileRepository) {
+    public ProfileService(
+            UserRepository userRepository,
+            MemberProfileRepository memberProfileRepository,
+            ImageProcessingService imageProcessingService) {
         this.userRepository = userRepository;
         this.memberProfileRepository = memberProfileRepository;
+        this.imageProcessingService = imageProcessingService;
     }
 
     @Transactional(readOnly = true)
@@ -154,6 +162,66 @@ public class ProfileService {
         return new AgeGroupReportResponse(groups, unknown);
     }
 
+    @Transactional
+    public PhotoUploadResponse uploadMyPhoto(UserPrincipal principal, MultipartFile file) {
+        User user = requireUser(principal.getId());
+        ensureMember(user);
+        MemberProfile profile = ensureProfile(user);
+
+        ImageProcessingService.ProcessedImage processed = imageProcessingService.processUpload(file);
+        profile.setPhotoData(processed.data());
+        profile.setPhotoContentType(processed.contentType());
+        profile.setPhotoUploaded(true);
+        profile.setUpdatedAt(java.time.Instant.now());
+        memberProfileRepository.save(profile);
+
+        return new PhotoUploadResponse(
+                true,
+                processed.contentType(),
+                processed.data().length,
+                "Photo uploaded and compressed successfully");
+    }
+
+    @Transactional(readOnly = true)
+    public PhotoPayload getMyPhoto(UserPrincipal principal) {
+        User user = requireUser(principal.getId());
+        ensureMember(user);
+        return requirePhoto(ensureProfile(user));
+    }
+
+    @Transactional
+    public MessageResponse deleteMyPhoto(UserPrincipal principal) {
+        User user = requireUser(principal.getId());
+        ensureMember(user);
+        MemberProfile profile = ensureProfile(user);
+        profile.setPhotoData(null);
+        profile.setPhotoContentType(null);
+        profile.setPhotoUploaded(false);
+        profile.setUpdatedAt(java.time.Instant.now());
+        memberProfileRepository.save(profile);
+        return new MessageResponse("Photo removed");
+    }
+
+    @Transactional(readOnly = true)
+    public PhotoPayload getMemberPhotoForCoach(Long userId) {
+        User user = requireUser(userId);
+        if (user.getRole() != Role.MEMBER) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Member not found");
+        }
+        return requirePhoto(ensureProfile(user));
+    }
+
+    private PhotoPayload requirePhoto(MemberProfile profile) {
+        if (!profile.isPhotoUploaded() || profile.getPhotoData() == null || profile.getPhotoData().length == 0) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No photo uploaded");
+        }
+        String contentType =
+                profile.getPhotoContentType() != null ? profile.getPhotoContentType() : "image/jpeg";
+        return new PhotoPayload(profile.getPhotoData(), contentType);
+    }
+
+    public record PhotoPayload(byte[] data, String contentType) {}
+
     private MemberSummaryResponse toSummary(MemberProfile profile) {
         User user = profile.getUser();
         Integer age = ageFrom(profile.getDateOfBirth());
@@ -169,7 +237,8 @@ public class ProfileService {
                 age,
                 profile.getStrokeSpecialty(),
                 profile.getPersonalBestSeconds(),
-                profile.isProfileCompleted());
+                profile.isProfileCompleted(),
+                profile.hasPhoto());
     }
 
     private static Integer ageFrom(LocalDate dateOfBirth) {
