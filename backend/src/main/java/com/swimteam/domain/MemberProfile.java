@@ -23,6 +23,10 @@ public class MemberProfile {
     @Column(nullable = false)
     private String lastName = "";
 
+    /** Optional preferred nickname shown to the team. */
+    @Column(length = 80)
+    private String nickname;
+
     private String phone;
 
     private LocalDate dateOfBirth;
@@ -92,6 +96,14 @@ public class MemberProfile {
 
     public void setLastName(String lastName) {
         this.lastName = lastName;
+    }
+
+    public String getNickname() {
+        return nickname;
+    }
+
+    public void setNickname(String nickname) {
+        this.nickname = nickname;
     }
 
     public String getPhone() {

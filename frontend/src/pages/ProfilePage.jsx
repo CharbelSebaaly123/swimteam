@@ -7,6 +7,7 @@ import { resizeImageForUpload } from '../imageUpload';
 const EMPTY = {
   firstName: '',
   lastName: '',
+  nickname: '',
   email: '',
   phone: '',
   dateOfBirth: '',
@@ -25,6 +26,7 @@ function toForm(profile) {
   return {
     firstName: profile.firstName || '',
     lastName: profile.lastName || '',
+    nickname: profile.nickname || '',
     email: profile.email || '',
     phone: profile.phone || '',
     dateOfBirth: profile.dateOfBirth || '',
@@ -43,6 +45,7 @@ function toPayload(form) {
   return {
     firstName: form.firstName.trim(),
     lastName: form.lastName.trim(),
+    nickname: form.nickname.trim() || null,
     email: form.email.trim(),
     phone: form.phone.trim(),
     dateOfBirth: form.dateOfBirth,
@@ -268,6 +271,14 @@ export function ProfilePage() {
                   value={form.lastName}
                   onChange={(e) => updateField('lastName', e.target.value)}
                   required
+                />
+              </label>
+              <label>
+                Nickname
+                <input
+                  value={form.nickname}
+                  onChange={(e) => updateField('nickname', e.target.value)}
+                  placeholder="Optional"
                 />
               </label>
               <label>

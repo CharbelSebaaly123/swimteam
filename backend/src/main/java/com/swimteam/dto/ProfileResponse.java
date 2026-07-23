@@ -14,6 +14,7 @@ public class ProfileResponse {
     private String email;
     private String firstName;
     private String lastName;
+    private String nickname;
     private String phone;
     private LocalDate dateOfBirth;
     private Integer age;
@@ -38,6 +39,7 @@ public class ProfileResponse {
             response.profileId = profile.getId();
             response.firstName = profile.getFirstName();
             response.lastName = profile.getLastName();
+            response.nickname = profile.getNickname();
             response.phone = profile.getPhone();
             response.dateOfBirth = profile.getDateOfBirth();
             if (profile.getDateOfBirth() != null) {
@@ -80,6 +82,10 @@ public class ProfileResponse {
 
     public String getLastName() {
         return lastName;
+    }
+
+    public String getNickname() {
+        return nickname;
     }
 
     public String getPhone() {

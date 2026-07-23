@@ -126,6 +126,7 @@ export function CoachDashboardPage() {
                           <div className="member-cell">
                             <strong>
                               {[m.firstName, m.lastName].filter(Boolean).join(' ') || m.username}
+                              {m.nickname ? ` (“${m.nickname}”)` : ''}
                             </strong>
                             <span>{m.email}</span>
                           </div>
@@ -211,7 +212,7 @@ export function CoachMemberDetailPage() {
         if (cancelled) return;
         setProfile(data);
         if (data.hasPhoto) {
-          objectUrl = await fetchPhotoObjectUrl(token, userId);
+          objectUrl = await fetchPhotoObjectUrl(token, { userId });
           if (!cancelled) setPhotoUrl(objectUrl);
         }
       } catch (err) {
@@ -247,7 +248,8 @@ export function CoachMemberDetailPage() {
           <div className={`status-banner ${profile.profileCompleted ? 'complete' : 'incomplete'}`}>
             <strong>{profile.profileCompleted ? 'Profile complete' : 'Profile incomplete'}</strong>
             <span>
-              {profile.firstName} {profile.lastName} (@{profile.username})
+              {profile.firstName} {profile.lastName}
+              {profile.nickname ? ` (“${profile.nickname}”)` : ''} (@{profile.username})
               {profile.age != null ? ` · age ${profile.age}` : ''}
             </span>
           </div>

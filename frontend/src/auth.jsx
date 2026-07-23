@@ -42,6 +42,14 @@ export function AuthProvider({ children }) {
         persist(data);
         return data;
       },
+      patchUser(partial) {
+        setAuth((prev) => {
+          if (!prev) return prev;
+          const next = { ...prev, ...partial };
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+          return next;
+        });
+      },
       logout() {
         persist(null);
       },

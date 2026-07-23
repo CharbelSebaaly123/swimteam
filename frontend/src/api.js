@@ -71,8 +71,13 @@ export function photoUrlForMember(token, userId) {
   };
 }
 
-export async function fetchPhotoObjectUrl(token, userId) {
-  const path = userId == null ? '/api/profiles/me/photo' : `/api/coach/members/${userId}/photo`;
+export async function fetchPhotoObjectUrl(token, { userId, coachSelf = false } = {}) {
+  let path = '/api/profiles/me/photo';
+  if (coachSelf) {
+    path = '/api/coach/me/photo';
+  } else if (userId != null) {
+    path = `/api/coach/members/${userId}/photo`;
+  }
   const response = await fetch(`${API_BASE}${path}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -107,6 +112,14 @@ export const api = {
     return requestMultipart('/api/profiles/me/photo', { formData, token });
   },
   deleteMyPhoto: (token) => request('/api/profiles/me/photo', { method: 'DELETE', token }),
+  getCoachProfile: (token) => request('/api/coach/me', { token }),
+  updateCoachProfile: (token, payload) =>
+    request('/api/coach/me', { method: 'PUT', body: payload, token }),
+  uploadCoachPhoto: (token, file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return requestMultipart('/api/coach/me/photo', { formData, token });
+  },
   getMembers: (token, { sort = 'name', direction = 'asc' } = {}) =>
     request(`/api/coach/members?sort=${encodeURIComponent(sort)}&direction=${encodeURIComponent(direction)}`, {
       token,

@@ -6,6 +6,8 @@ import com.swimteam.domain.User;
 import com.swimteam.dto.AgeGroupReportResponse;
 import com.swimteam.dto.AgeGroupReportResponse.AgeGroupBucket;
 import com.swimteam.dto.CoachMetricsResponse;
+import com.swimteam.dto.CoachProfileResponse;
+import com.swimteam.dto.CoachProfileUpdateRequest;
 import com.swimteam.dto.MemberSummaryResponse;
 import com.swimteam.dto.MessageResponse;
 import com.swimteam.dto.PhotoUploadResponse;
@@ -211,6 +213,65 @@ public class ProfileService {
         return requirePhoto(ensureProfile(user));
     }
 
+    @Transactional(readOnly = true)
+    public CoachProfileResponse getCoachProfile(UserPrincipal principal) {
+        User user = requireCoach(principal.getId());
+        return CoachProfileResponse.from(user);
+    }
+
+    @Transactional
+    public CoachProfileResponse updateCoachProfile(UserPrincipal principal, CoachProfileUpdateRequest request) {
+        User user = requireCoach(principal.getId());
+        user.setFirstName(request.getFirstName().trim());
+        user.setLastName(request.getLastName().trim());
+        user.setNickname(trimToNull(request.getNickname()));
+        userRepository.save(user);
+        return CoachProfileResponse.from(user);
+    }
+
+    @Transactional
+    public PhotoUploadResponse uploadCoachPhoto(UserPrincipal principal, MultipartFile file) {
+        User user = requireCoach(principal.getId());
+        ImageProcessingService.ProcessedImage processed = imageProcessingService.processUpload(file);
+        user.setPhotoData(processed.data());
+        user.setPhotoContentType(processed.contentType());
+        user.setPhotoUploaded(true);
+        userRepository.save(user);
+        return new PhotoUploadResponse(
+                true,
+                processed.contentType(),
+                processed.data().length,
+                "Coach photo uploaded and compressed successfully");
+    }
+
+    @Transactional(readOnly = true)
+    public PhotoPayload getCoachPhoto(UserPrincipal principal) {
+        User user = requireCoach(principal.getId());
+        return requireUserPhoto(user);
+    }
+
+    @Transactional(readOnly = true)
+    public PhotoPayload getCoachPhotoPublicForAuth(Long userId) {
+        User user = requireCoach(userId);
+        return requireUserPhoto(user);
+    }
+
+    private PhotoPayload requireUserPhoto(User user) {
+        if (!user.isPhotoUploaded() || user.getPhotoData() == null || user.getPhotoData().length == 0) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No photo uploaded");
+        }
+        String contentType = user.getPhotoContentType() != null ? user.getPhotoContentType() : "image/jpeg";
+        return new PhotoPayload(user.getPhotoData(), contentType);
+    }
+
+    private User requireCoach(Long id) {
+        User user = requireUser(id);
+        if (user.getRole() != Role.COACH) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Coach profile only");
+        }
+        return user;
+    }
+
     private PhotoPayload requirePhoto(MemberProfile profile) {
         if (!profile.isPhotoUploaded() || profile.getPhotoData() == null || profile.getPhotoData().length == 0) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No photo uploaded");
@@ -232,6 +293,7 @@ public class ProfileService {
                 user.getEmail(),
                 profile.getFirstName(),
                 profile.getLastName(),
+                profile.getNickname(),
                 profile.getPhone(),
                 profile.getDateOfBirth() != null ? profile.getDateOfBirth().toString() : null,
                 age,
@@ -278,6 +340,7 @@ public class ProfileService {
     private void applyUpdate(MemberProfile profile, ProfileUpdateRequest request) {
         profile.setFirstName(request.getFirstName().trim());
         profile.setLastName(request.getLastName().trim());
+        profile.setNickname(trimToNull(request.getNickname()));
         profile.setPhone(request.getPhone().trim());
         profile.setDateOfBirth(request.getDateOfBirth());
         profile.setAddress(trimToNull(request.getAddress()));

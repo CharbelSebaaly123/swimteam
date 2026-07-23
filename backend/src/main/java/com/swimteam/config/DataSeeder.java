@@ -32,7 +32,7 @@ public class DataSeeder {
             @Value("${app.admin.password}") String adminPassword,
             @Value("${app.admin.email}") String adminEmail) {
         return args -> {
-            seedAdmin(userRepository, passwordEncoder, adminUsername, adminPassword, adminEmail);
+            seedAdmin(userRepository, passwordEncoder, imageProcessingService, adminUsername, adminPassword, adminEmail);
             seedSampleMember(userRepository, passwordEncoder, imageProcessingService);
         };
     }
@@ -40,6 +40,7 @@ public class DataSeeder {
     private void seedAdmin(
             UserRepository userRepository,
             PasswordEncoder passwordEncoder,
+            ImageProcessingService imageProcessingService,
             String adminUsername,
             String adminPassword,
             String adminEmail) {
@@ -49,8 +50,12 @@ public class DataSeeder {
             admin.setEmail(adminEmail);
             admin.setPasswordHash(passwordEncoder.encode(adminPassword));
             admin.setRole(Role.COACH);
+            admin.setFirstName("Labib");
+            admin.setLastName("Waked");
+            admin.setNickname("Wahsh");
+            attachUserPhoto(admin, "sample-data/sample-coach.jpg", imageProcessingService, "coach");
             userRepository.save(admin);
-            log.info("Default coach user '{}' created", adminUsername);
+            log.info("Default coach '{}' created as Labib Waked (Wahsh)", adminUsername);
         } else {
             log.info("Default coach user '{}' already exists", adminUsername);
         }
@@ -74,6 +79,7 @@ public class DataSeeder {
         MemberProfile profile = new MemberProfile();
         profile.setFirstName("Maroun Labib");
         profile.setLastName("Waked");
+        profile.setNickname("Maroun");
         profile.setPhone("+14155550123");
         profile.setDateOfBirth(LocalDate.of(1996, 3, 14));
         profile.setAddress("42 Harbor Lane");
@@ -84,7 +90,7 @@ public class DataSeeder {
         profile.setHeightCm(180);
         profile.setWeightKg(75.0);
         profile.setNotes("Sample member used for demos.");
-        attachSamplePhoto(profile, imageProcessingService);
+        attachMemberPhoto(profile, imageProcessingService);
         profile.recomputeCompletion();
 
         member.setProfile(profile);
@@ -94,7 +100,7 @@ public class DataSeeder {
                 SAMPLE_MEMBER_USERNAME);
     }
 
-    private void attachSamplePhoto(MemberProfile profile, ImageProcessingService imageProcessingService) {
+    private void attachMemberPhoto(MemberProfile profile, ImageProcessingService imageProcessingService) {
         ClassPathResource photo = new ClassPathResource("sample-data/sample-member.jpg");
         if (!photo.exists()) {
             log.warn("Sample photo resource not found; sample member will have no photo");
@@ -111,6 +117,28 @@ public class DataSeeder {
                     processed.contentType());
         } catch (Exception ex) {
             log.warn("Could not attach sample member photo: {}", ex.getMessage());
+        }
+    }
+
+    private void attachUserPhoto(
+            User user, String classpathLocation, ImageProcessingService imageProcessingService, String label) {
+        ClassPathResource photo = new ClassPathResource(classpathLocation);
+        if (!photo.exists()) {
+            log.warn("Sample {} photo resource not found", label);
+            return;
+        }
+        try (InputStream in = photo.getInputStream()) {
+            ProcessedImage processed = imageProcessingService.processImageStream(in);
+            user.setPhotoData(processed.data());
+            user.setPhotoContentType(processed.contentType());
+            user.setPhotoUploaded(true);
+            log.info(
+                    "Sample {} photo compressed to {} bytes ({})",
+                    label,
+                    processed.data().length,
+                    processed.contentType());
+        } catch (Exception ex) {
+            log.warn("Could not attach sample {} photo: {}", label, ex.getMessage());
         }
     }
 }

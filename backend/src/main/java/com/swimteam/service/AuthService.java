@@ -61,9 +61,10 @@ public class AuthService {
 
         UserPrincipal principal = new UserPrincipal(user);
         String token = jwtTokenProvider.generateToken(principal);
-        return new AuthResponse(token, user.getId(), user.getUsername(), user.getEmail(), user.getRole());
+        return new AuthResponse(token, user);
     }
 
+    @Transactional(readOnly = true)
     public AuthResponse login(LoginRequest request) {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
@@ -71,8 +72,12 @@ public class AuthService {
         User user = userRepository
                 .findByUsername(principal.getUsername())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials"));
+        // Touch profile while session is open so AuthResponse can read nickname/name
+        if (user.getProfile() != null) {
+            user.getProfile().getNickname();
+        }
         String token = jwtTokenProvider.generateToken(principal);
-        return new AuthResponse(token, user.getId(), user.getUsername(), user.getEmail(), user.getRole());
+        return new AuthResponse(token, user);
     }
 
     @Transactional

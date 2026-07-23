@@ -66,7 +66,7 @@ export function LoginPage() {
           <p className="auth-switch">
             New member? <Link to="/signup">Create an account</Link>
           </p>
-          <p className="hint">Coach demo: admin / admin123</p>
+          <p className="hint">Coach demo: admin / admin123 (Labib “Wahsh” Waked)</p>
         </div>
         <div className="auth-visual" aria-hidden="true">
           <div className="wave wave-a" />

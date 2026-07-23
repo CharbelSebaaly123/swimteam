@@ -19,6 +19,9 @@ public class ProfileUpdateRequest {
     @Size(max = 100)
     private String lastName;
 
+    @Size(max = 80)
+    private String nickname;
+
     @NotBlank
     @Email
     @Size(max = 255)
@@ -70,6 +73,14 @@ public class ProfileUpdateRequest {
 
     public void setLastName(String lastName) {
         this.lastName = lastName;
+    }
+
+    public String getNickname() {
+        return nickname;
+    }
+
+    public void setNickname(String nickname) {
+        this.nickname = nickname;
     }
 
     public String getEmail() {

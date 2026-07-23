@@ -6,6 +6,7 @@ import { SignupPage } from './pages/SignupPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { ChangePasswordPage } from './pages/ChangePasswordPage';
 import { CoachDashboardPage, CoachMemberDetailPage } from './pages/CoachDashboardPage';
+import { CoachProfilePage } from './pages/CoachProfilePage';
 
 function HomeRedirect() {
   const { user, isCoach } = useAuth();
@@ -30,6 +31,7 @@ export default function App() {
 
       <Route element={<ProtectedRoute role="COACH" />}>
         <Route path="/coach" element={<CoachDashboardPage />} />
+        <Route path="/coach/profile" element={<CoachProfilePage />} />
         <Route path="/coach/members/:userId" element={<CoachMemberDetailPage />} />
       </Route>
 

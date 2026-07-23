@@ -8,6 +8,7 @@ public class MemberSummaryResponse {
     private String email;
     private String firstName;
     private String lastName;
+    private String nickname;
     private String phone;
     private String dateOfBirth;
     private Integer age;
@@ -23,6 +24,7 @@ public class MemberSummaryResponse {
             String email,
             String firstName,
             String lastName,
+            String nickname,
             String phone,
             String dateOfBirth,
             Integer age,
@@ -36,6 +38,7 @@ public class MemberSummaryResponse {
         this.email = email;
         this.firstName = firstName;
         this.lastName = lastName;
+        this.nickname = nickname;
         this.phone = phone;
         this.dateOfBirth = dateOfBirth;
         this.age = age;
@@ -67,6 +70,10 @@ public class MemberSummaryResponse {
 
     public String getLastName() {
         return lastName;
+    }
+
+    public String getNickname() {
+        return nickname;
     }
 
     public String getPhone() {
