@@ -20,6 +20,14 @@ Responsive web app for swim team members to enter personal information, with coa
 
 See [SPECS.md](./SPECS.md) for the step-by-step plan.
 
+## Architecture & design docs (for junior developers)
+
+| Document | What you’ll learn |
+|----------|-------------------|
+| [docs/architecture.md](./docs/architecture.md) | Big-picture system design, roles, request flows |
+| [docs/backend-design.md](./docs/backend-design.md) | REST, JWT, Spring Boot layers & best practices |
+| [docs/frontend-design.md](./docs/frontend-design.md) | React structure, auth context, calling APIs safely |
+
 ## Run locally
 
 ### 1. API (port 8080)
