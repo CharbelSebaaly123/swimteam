@@ -7,4 +7,4 @@ npm install
 npm run dev
 ```
 
-Requires the Spring Boot API on port 8080 (Vite proxies `/api`).
+Requires the Go API on port 8080 (Vite proxies `/api`).

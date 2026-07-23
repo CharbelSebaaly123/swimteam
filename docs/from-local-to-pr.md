@@ -25,10 +25,10 @@ Edit code, docs, or tests. Keep the change focused.
 
 ```bash
 # Automated backend tests
-cd backend && mvn test
+cd backend && go test ./...
 
 # Run the app
-cd backend && mvn spring-boot:run
+cd backend && go run ./cmd/server
 
 # In another terminal
 cd frontend && npm install && npm run dev

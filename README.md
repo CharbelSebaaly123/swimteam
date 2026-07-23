@@ -4,7 +4,7 @@ Responsive web app for swim team members to enter personal information, with coa
 
 ## Stack
 
-- **Backend:** Java Spring Boot 3 (REST, JWT, Spring Security, JPA, H2)
+- **Backend:** Go (Chi router, GORM, JWT, SQLite)
 - **Frontend:** React (Vite) + React Router
 
 ## Roles
@@ -26,10 +26,9 @@ See [SPECS.md](./SPECS.md) for the step-by-step plan.
 | Document | What you’ll learn |
 |----------|-------------------|
 | [docs/architecture.md](./docs/architecture.md) | Big-picture system design, roles, request flows |
-| [docs/backend-design.md](./docs/backend-design.md) | REST, JWT, Spring Boot layers & best practices |
+| [docs/backend-design.md](./docs/backend-design.md) | REST, JWT, Go layers & best practices |
 | [docs/frontend-design.md](./docs/frontend-design.md) | React structure, auth context, calling APIs safely |
 | [docs/testing.md](./docs/testing.md) | Unit, integration, smoke, and manual test checklists |
-| [docs/from-local-to-pr.md](./docs/from-local-to-pr.md) | Steps from local changes to a pull request on `main` |
 
 ## Run locally
 
@@ -37,7 +36,7 @@ See [SPECS.md](./SPECS.md) for the step-by-step plan.
 
 ```bash
 cd backend
-mvn spring-boot:run
+go run ./cmd/server
 ```
 
 ### 2. UI (port 5173)
@@ -78,10 +77,16 @@ A profile is marked `profileCompleted: true` when these are filled:
 - Stroke specialty
 
 Address is optional.
+
 ## Project layout
 
 ```
-backend/   Spring Boot REST service
+backend/   Go REST service (Chi + GORM + SQLite)
 frontend/  React SPA
 SPECS.md   Spec-driven implementation plan
+docs/      Architecture, design, and testing guides
 ```
+
+## Database
+
+**SQLite** (file `backend/swimteam.db` by default). Easy for local development—no separate database server to install.

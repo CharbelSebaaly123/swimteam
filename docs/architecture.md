@@ -1,256 +1,142 @@
-# High-Level Architecture
+# SwimTeam Go — High-Level Architecture
 
-**Audience:** Junior developers learning how a full-stack web app fits together  
-**Project:** SwimTeam Profiles — members manage their own data; coaches see everything
-
-This document explains the big picture. For deeper detail, see:
-
-- [Backend Design](./backend-design.md) — Spring Boot, REST, JWT
-- [Frontend Design](./frontend-design.md) — React, routing, calling APIs
-- [Testing Guide](./testing.md) — unit, integration, smoke, and manual checklists
+**Audience:** Junior developers  
+**Related docs:** [Backend Design](./backend-design.md) · [Frontend Design](./frontend-design.md) · [Testing](./testing.md)
 
 ---
 
-## 1. What problem does this app solve?
+## 1. What are we building?
 
-A swim team needs:
+A small web app for a swim team:
 
-1. **Members** to create an account and fill in personal info + swim metrics.
-2. **Coaches** to see every member, who finished their profile, and team-wide stats.
+- **Members** sign up, log in, and fill out **their own** profile (contact info, metrics, photo).
+- **Coaches** log in and see **everyone**: roster, completion flags, metrics, and age-group reports.
 
-Those two roles must not see the same things. Architecture is how we draw those boundaries clearly.
+Two apps work together:
+
+```
+┌─────────────────────┐         HTTPS JSON + JWT         ┌─────────────────────┐
+│   React Frontend    │  ──── Authorization: Bearer ───► │     Go REST API      │
+│   (Vite, port 5173) │ ◄──── JSON / images ──────────── │   (Chi, port 8080)  │
+└─────────────────────┘                                  └──────────┬──────────┘
+                                                                    │
+                                                                    ▼
+                                                           ┌─────────────────┐
+                                                           │  SQLite database│
+                                                           │  (swimteam.db)  │
+                                                           └─────────────────┘
+```
+
+The browser is **not** trusted. Security rules (who can see which profile) live on the **server**.
 
 ---
 
-## 2. Mental model: two apps talking over HTTP
-
-```
-┌─────────────────────┐         HTTP + JSON          ┌─────────────────────┐
-│                     │  ─────────────────────────►  │                     │
-│   React Frontend    │     Authorization: Bearer    │  Spring Boot API    │
-│   (browser)         │  ◄─────────────────────────  │  (server)           │
-│                     │         JWT + data           │                     │
-└─────────────────────┘                              └──────────┬──────────┘
-                                                                │
-                                                                ▼
-                                                     ┌─────────────────────┐
-                                                     │  H2 Database        │
-                                                     │  (users, profiles)  │
-                                                     └─────────────────────┘
-```
+## 2. Client vs server (simple mental model)
 
 | Piece | Runs where? | Job |
 |-------|-------------|-----|
-| **Frontend** | User’s browser | Screens, forms, navigation |
-| **Backend API** | Server (your machine in local dev) | Rules, security, business logic |
-| **Database** | Server process (H2 in-memory here) | Durable storage of users & profiles |
+| React SPA | Browser | Forms, navigation, show data |
+| Go API | Server | Auth, validation, database, photos |
+| SQLite | Server disk | Persist users & profiles |
 
-**Why split them?**  
-The browser is not trusted. Anyone can open DevTools and change JavaScript. Real security and data rules live on the server.
-
----
-
-## 3. Architecture style: client–server + REST API
-
-This project uses a **client–server** style with a **REST API** in the middle:
-
-- The React app is the **client**.
-- The Spring Boot app is the **server**.
-- They communicate with **REST** endpoints (URLs that accept HTTP methods like `GET` / `POST` / `PUT`).
-
-### What is REST? (short version)
-
-**REST** (Representational State Transfer) is a way to design web APIs so that:
-
-- Each **resource** has a URL (example: `/api/profiles/me`).
-- You use **HTTP methods** to say what you want to do:
-
-| Method | Meaning | Example in this app |
-|--------|---------|---------------------|
-| `GET` | Read | Get my profile |
-| `POST` | Create / start an action | Sign up, log in |
-| `PUT` | Replace / update | Save my full profile |
-| `DELETE` | Remove | (not used yet) |
-
-- Data is usually sent as **JSON** (JavaScript Object Notation).
-- The API should be **stateless**: each request carries enough info (here: a JWT) so the server does not need a server-side “login session” for every click.
-
-You will see REST explained more in the [backend design doc](./backend-design.md).
+If you only hide a button in React, a curious user can still call the API. The Go service must reject forbidden requests with **401/403**.
 
 ---
 
-## 4. Security at a glance: JWT
+## 3. Roles
 
-After login or signup, the backend returns a **JWT** (JSON Web Token). The frontend stores it and sends it on later requests:
+| Role | How you get it | Access |
+|------|----------------|--------|
+| `MEMBER` | Sign up | Own profile + photo + password change |
+| `COACH` | Seeded `admin` (or created offline) | All members, metrics, age reports, own coach profile |
+
+Default coach: **`admin` / `admin123`** (Labib Waked, nickname Wahsh).
+
+---
+
+## 4. REST in one minute
+
+**REST** means we model resources and use HTTP methods:
+
+| Method | Meaning | Example |
+|--------|---------|---------|
+| `GET` | Read | `GET /api/profiles/me` |
+| `POST` | Create / action | `POST /api/auth/login` |
+| `PUT` | Replace/update | `PUT /api/profiles/me` |
+| `DELETE` | Remove | `DELETE /api/profiles/me/photo` |
+
+URLs name **nouns** (`/profiles`, `/members`), not verbs like `/getProfile`.  
+Status codes tell the story: **200** OK, **201** created, **400** bad input, **401** not logged in, **403** logged in but not allowed, **404** missing, **409** conflict.
+
+Data is usually **JSON**.
+
+---
+
+## 5. JWT in one minute
+
+After login/signup the API returns a **JWT** (JSON Web Token): a signed string the browser stores and sends as:
 
 ```http
-Authorization: Bearer eyJhbGciOiJIUzUxMiJ9...
+Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
 ```
 
-Think of the JWT as a **signed ID badge**:
+Inside the token (readable, but tamper-proof because of the signature):
 
-- The server created it and signed it with a secret.
-- The client cannot forge a valid badge without that secret.
-- The badge says who you are (`admin`) and what role you have (`COACH` or `MEMBER`).
+- `sub` / username
+- `uid` — user id
+- `role` — `COACH` or `MEMBER`
+- `exp` — expiry time
 
-**Important:** JWTs are not magic encryption of your whole account. They are a portable proof of authentication. Keep them out of public places (URL query strings, screenshots, chat logs).
+Middleware on every protected route:
 
-Details: [Backend Design → JWT](./backend-design.md#3-jwt-explained-for-juniors).
+1. Reads the header  
+2. Verifies the signature with a secret  
+3. Attaches claims to the request context  
+4. Handlers check role / ownership
+
+Never put secrets (passwords) inside a JWT. Never trust a JWT that fails signature checks.
 
 ---
 
-## 5. Roles and access (authorization)
+## 6. Request flows
 
-Authentication = “Who are you?”  
-Authorization = “What are you allowed to do?”
+### Member updates profile
 
-| Role | How you get it | What you can do |
-|------|----------------|-----------------|
-| `MEMBER` | Sign up | Read/update **only your** profile |
-| `COACH` | Seeded default user `admin` | List all members, view any profile, see metrics |
+1. React `PUT /api/profiles/me` with JWT  
+2. Go auth middleware validates JWT  
+3. Service loads that user’s profile only  
+4. Validates email, E.164 phone, DOB, etc.  
+5. Saves SQLite row + recomputes `profileCompleted`  
+6. Returns JSON profile
 
-The frontend **hides** coach screens from members for UX, but the backend **enforces** the rules. Always enforce on the server.
+### Coach views roster sorted by age
 
-```
-Member token ──► /api/profiles/me     ✅
-Member token ──► /api/coach/members   ❌ 403 Forbidden
-
-Coach token  ──► /api/coach/members   ✅
-Coach token  ──► /api/profiles/me     ❌ (coaches don’t have member profiles)
-```
+1. React `GET /api/coach/members?sort=age&direction=asc`  
+2. Middleware requires `COACH`  
+3. Service loads all member profiles, sorts, returns summaries + completion flags
 
 ---
 
-## 6. Main request flows
-
-### 6.1 Member signup → complete profile
+## 7. Project layout
 
 ```
-Browser                API                     Database
-   │                    │                         │
-   │ POST /api/auth/signup                        │
-   │───────────────────►│ create User+Profile     │
-   │                    │────────────────────────►│
-   │◄── JWT + role MEMBER                         │
-   │                    │                         │
-   │ PUT /api/profiles/me  (+ Bearer JWT)         │
-   │───────────────────►│ validate & save         │
-   │                    │ set profileCompleted    │
-   │◄── updated profile JSON                      │
-```
-
-### 6.2 Coach views roster and metrics
-
-```
-Browser                API
-   │ POST /api/auth/login (admin)
-   │───────────────────►│
-   │◄── JWT + role COACH
-   │
-   │ GET /api/coach/metrics
-   │ GET /api/coach/members
-   │───────────────────►│ (role must be COACH)
-   │◄── counts + roster with completion flags
+backend/
+  cmd/server/          # main() entrypoint
+  internal/            # private app code (auth, handlers, services, models…)
+  sample-data/         # seed photos
+frontend/
+  src/pages/           # Login, Signup, Profile, Coach dashboard…
+docs/                  # You are here
+SPECS.md               # Spec-driven plan
 ```
 
 ---
 
-## 7. Project layout (monorepo)
+## 8. Why this architecture?
 
-```
-swimteam/
-├── backend/          # Spring Boot REST API (port 8080)
-├── frontend/         # React + Vite SPA (port 5173)
-├── docs/             # Architecture & design docs (you are here)
-├── SPECS.md          # Spec-driven build plan
-└── README.md         # How to run the app
-```
+- **Separation:** UI can change without rewriting business rules.
+- **Security at the edge of the API:** one place to enforce roles.
+- **SQLite for learning:** one file, no install, great for local demos.
+- **Spec-driven:** build and verify one vertical slice at a time (see `SPECS.md`).
 
-In local development, Vite **proxies** `/api` to `http://localhost:8080`, so the browser can call `/api/...` without worrying about CORS during day-to-day coding.
-
----
-
-## 8. Layered backend (why packages matter)
-
-Inside `backend/`, code is split by responsibility:
-
-```
-web (controllers)     → HTTP in/out only
-service               → business rules
-repository            → database access
-domain                → entities (User, MemberProfile)
-security              → JWT + Spring Security
-dto                   → request/response shapes
-```
-
-This is sometimes called **layered architecture**. Juniors should learn:
-
-- Controllers should stay thin.
-- Services own the rules (e.g. “recompute profileCompleted”).
-- Repositories should not contain business policy.
-
----
-
-## 9. Frontend structure (SPA)
-
-The React app is a **Single Page Application (SPA)**:
-
-- The browser loads one HTML page.
-- React Router swaps screens without full page reloads.
-- Pages call the API with `fetch`.
-
-Key ideas:
-
-- **Auth context** holds the logged-in user + JWT.
-- **Protected routes** send guests to login and block wrong roles.
-- **Pages** own screen-specific state (forms, loading, errors).
-
----
-
-## 10. Data the system cares about
-
-```
-User
- ├── id, username, email, passwordHash, role
- └── optional MemberProfile (members only)
-        ├── personal fields (name, phone, DOB, …)
-        ├── metrics (stroke, PB seconds, height, weight)
-        └── profileCompleted (true/false flag for coaches)
-```
-
-Completion is not a separate table. It is a **derived flag** recomputed when a member saves their profile.
-
----
-
-## 11. Non-goals (what this architecture deliberately skips)
-
-For learning clarity, this project does **not** yet include:
-
-- Refresh tokens / logout blacklists
-- Password reset email flows
-- Production database (Postgres, etc.)
-- File uploads (profile photos)
-- Multi-team / multi-tenant orgs
-
-Those are natural next steps once the basics feel solid.
-
----
-
-## 12. How to read the rest of the docs
-
-| If you want to learn… | Read |
-|-----------------------|------|
-| REST verbs, status codes, Spring layers, JWT filters | [backend-design.md](./backend-design.md) |
-| Components, hooks, routing, calling APIs safely | [frontend-design.md](./frontend-design.md) |
-| What was built step by step | [../SPECS.md](../SPECS.md) |
-
-### Junior tip
-
-When something breaks, ask:
-
-1. Did the **request** leave the browser? (Network tab)
-2. Did the **API** accept it? (status code 200/201 vs 401/403/400)
-3. Did the **JWT** get sent?
-4. Is this a **UI** bug or a **server rule**?
-
-That habit will save you hours.
+Next: dive into [backend-design.md](./backend-design.md) for Go packages and JWT filters, then [frontend-design.md](./frontend-design.md) for React routing.

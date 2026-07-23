@@ -1,32 +1,31 @@
-# Compiled class file
-*.class
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
 
-# Log file
-*.log
+# Go
+coverage.*
+*.coverprofile
+profile.cov
+vendor/
+go.work
+go.work.sum
 
-# BlueJ files
-*.ctxt
+# App local DB / uploads
+backend/*.db
+backend/*.db-journal
+*.db
 
-# Mobile Tools for Java (J2ME)
-.mtj.tmp/
-
-# Package Files #
-*.jar
-*.war
-*.nar
-*.ear
-*.zip
-*.tar.gz
-*.rar
-
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
-hs_err_pid*
-replay_pid*
-
-# Build / deps
-backend/target/
+# Node
 frontend/node_modules/
 frontend/dist/
+
+# Env / IDE
+.env
 .idea/
-*.iml
+.vscode/
 .DS_Store
