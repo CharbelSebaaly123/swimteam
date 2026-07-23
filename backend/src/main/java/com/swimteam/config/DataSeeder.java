@@ -67,7 +67,7 @@ public class DataSeeder {
 
         User member = new User();
         member.setUsername(SAMPLE_MEMBER_USERNAME);
-        member.setEmail("sample.member@swimteam.local");
+        member.setEmail("maroun.waked@swimteam.local");
         member.setPasswordHash(passwordEncoder.encode("sample123"));
         member.setRole(Role.MEMBER);
 
