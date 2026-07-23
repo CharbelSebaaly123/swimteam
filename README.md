@@ -28,6 +28,7 @@ See [SPECS.md](./SPECS.md) for the step-by-step plan.
 | [docs/architecture.md](./docs/architecture.md) | Big-picture system design, roles, request flows |
 | [docs/backend-design.md](./docs/backend-design.md) | REST, JWT, Spring Boot layers & best practices |
 | [docs/frontend-design.md](./docs/frontend-design.md) | React structure, auth context, calling APIs safely |
+| [docs/testing.md](./docs/testing.md) | Unit, integration, smoke, and manual test checklists |
 
 ## Run locally
 

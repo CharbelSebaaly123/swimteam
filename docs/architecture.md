@@ -7,6 +7,7 @@ This document explains the big picture. For deeper detail, see:
 
 - [Backend Design](./backend-design.md) — Spring Boot, REST, JWT
 - [Frontend Design](./frontend-design.md) — React, routing, calling APIs
+- [Testing Guide](./testing.md) — unit, integration, smoke, and manual checklists
 
 ---
 
