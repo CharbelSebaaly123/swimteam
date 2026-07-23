@@ -72,12 +72,12 @@ public class DataSeeder {
         member.setRole(Role.MEMBER);
 
         MemberProfile profile = new MemberProfile();
-        profile.setFirstName("Alex");
-        profile.setLastName("Carter");
+        profile.setFirstName("Maroun Labib");
+        profile.setLastName("Waked");
         profile.setPhone("+14155550123");
         profile.setDateOfBirth(LocalDate.of(1996, 3, 14));
         profile.setAddress("42 Harbor Lane");
-        profile.setEmergencyContactName("Jordan Carter");
+        profile.setEmergencyContactName("Family Contact");
         profile.setEmergencyContactPhone("+14155550987");
         profile.setStrokeSpecialty("Freestyle");
         profile.setPersonalBestSeconds(54.8);
