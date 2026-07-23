@@ -29,6 +29,7 @@ See [SPECS.md](./SPECS.md) for the step-by-step plan.
 | [docs/backend-design.md](./docs/backend-design.md) | REST, JWT, Spring Boot layers & best practices |
 | [docs/frontend-design.md](./docs/frontend-design.md) | React structure, auth context, calling APIs safely |
 | [docs/testing.md](./docs/testing.md) | Unit, integration, smoke, and manual test checklists |
+| [docs/from-local-to-pr.md](./docs/from-local-to-pr.md) | Steps from local changes to a pull request on `main` |
 
 ## Run locally
 
