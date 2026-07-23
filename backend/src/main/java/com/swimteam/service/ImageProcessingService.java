@@ -52,6 +52,16 @@ public class ImageProcessingService {
         }
 
         try (InputStream in = file.getInputStream()) {
+            return processImageStream(in);
+        } catch (ResponseStatusException ex) {
+            throw ex;
+        } catch (IOException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Failed to process image upload");
+        }
+    }
+
+    public ProcessedImage processImageStream(InputStream in) {
+        try {
             BufferedImage source = ImageIO.read(in);
             if (source == null) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Could not read image file");

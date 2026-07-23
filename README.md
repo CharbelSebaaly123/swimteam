@@ -14,7 +14,8 @@ Responsive web app for swim team members to enter personal information, with coa
 | `COACH` | Full roster, member details, team metrics, completion flags |
 | `MEMBER` | Own profile only (after signup) |
 
-**Default coach:** `admin` / `admin123`
+**Default coach:** `admin` / `admin123`  
+**Sample member:** `sample` / `sample123` (preloaded profile + photo)
 
 ## Specs
 
